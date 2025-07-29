@@ -20,13 +20,27 @@ export default function BrochureManagement() {
   const [uploadMessage, setUploadMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
   useEffect(() => {
-    const token = localStorage.getItem("admin-token")
-    if (!token) {
-      router.push("/admin/login")
-    } else {
-      setIsAuthenticated(true)
-      loadBrochure()
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/verify")
+        if (response.ok) {
+          const data = await response.json()
+          if (data.authenticated && data.user.role === "admin") {
+            setIsAuthenticated(true)
+            loadBrochure()
+          } else {
+            router.push("/admin/login")
+          }
+        } else {
+          router.push("/admin/login")
+        }
+      } catch (error) {
+        console.error("Auth check failed:", error)
+        router.push("/admin/login")
+      }
     }
+
+    checkAuth()
   }, [router])
 
   const loadBrochure = () => {
