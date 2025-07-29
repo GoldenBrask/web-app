@@ -41,13 +41,27 @@ export default function PartnersManagement() {
   })
 
   useEffect(() => {
-    const token = localStorage.getItem("admin-token")
-    if (!token) {
-      router.push("/admin/login")
-    } else {
-      setIsAuthenticated(true)
-      loadPartners()
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/verify")
+        if (response.ok) {
+          const data = await response.json()
+          if (data.authenticated && data.user.role === "admin") {
+            setIsAuthenticated(true)
+            loadPartners()
+          } else {
+            router.push("/admin/login")
+          }
+        } else {
+          router.push("/admin/login")
+        }
+      } catch (error) {
+        console.error("Auth check failed:", error)
+        router.push("/admin/login")
+      }
     }
+
+    checkAuth()
   }, [router])
 
   const loadPartners = () => {

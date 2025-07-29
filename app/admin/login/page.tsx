@@ -24,15 +24,28 @@ export default function AdminLogin() {
     setIsLoading(true)
     setError("")
 
-    // Simulate authentication (replace with real auth)
-    if (email === "admin@junior-miage-concept.fr" && password === "admin123") {
-      localStorage.setItem("admin-token", "authenticated")
-      router.push("/admin/dashboard")
-    } else {
-      setError("Email ou mot de passe incorrect")
-    }
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+        credentials: "include",
+      })
 
-    setIsLoading(false)
+      if (response.ok) {
+        router.push("/admin/dashboard")
+      } else {
+        const data = await response.json()
+        setError(data.error || "Email ou mot de passe incorrect")
+      }
+    } catch (err) {
+      console.error("Login failed:", err)
+      setError("Erreur de connexion")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
