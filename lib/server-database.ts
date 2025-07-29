@@ -8,40 +8,15 @@ if (typeof window !== "undefined") {
   throw new Error("This module should only be used on the server side")
 }
 
-// Database connection with better error handling
+// Database connection
 const pool = new Pool({
   user: process.env.DB_USER || "junior_miage",
   host: process.env.DB_HOST || "localhost",
   database: process.env.DB_NAME || "junior_miage_db",
-  password: process.env.DB_PASSWORD || "your_secure_password",
+  password: process.env.DB_PASSWORD,
   port: Number.parseInt(process.env.DB_PORT || "5432"),
   ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
-  // Add connection timeout and retry logic
-  connectionTimeoutMillis: 5000,
-  idleTimeoutMillis: 30000,
-  max: 20,
 })
-
-// Test database connection
-pool.on("connect", () => {
-  console.log("Connected to PostgreSQL database")
-})
-
-pool.on("error", (err) => {
-  console.error("Unexpected error on idle client", err)
-})
-
-// Helper function to handle database errors
-function handleDatabaseError(error: any, operation: string) {
-  console.error(`${operation} error:`, error)
-  if (error.code === "28P01") {
-    throw new Error("Database authentication failed. Please check your credentials.")
-  }
-  if (error.code === "ECONNREFUSED") {
-    throw new Error("Database connection refused. Please check if PostgreSQL is running.")
-  }
-  throw error
-}
 
 // Types (these can be shared)
 export interface TeamMember {
@@ -152,8 +127,8 @@ export const authService = {
         },
       }
     } catch (error) {
-      handleDatabaseError(error, "Login")
-      return null
+      console.error("Login error:", error)
+      throw error
     }
   },
 
@@ -174,7 +149,7 @@ export const authService = {
       )
       return result.rows[0]
     } catch (error) {
-      handleDatabaseError(error, "Create admin")
+      console.error("Create admin error:", error)
       throw error
     }
   },
@@ -191,8 +166,8 @@ export const teamService = {
         projects: typeof row.projects === "string" ? JSON.parse(row.projects) : row.projects,
       }))
     } catch (error) {
-      handleDatabaseError(error, "Get team members")
-      return []
+      console.error("Get team members error:", error)
+      throw error
     }
   },
 
@@ -221,7 +196,7 @@ export const teamService = {
         projects: typeof row.projects === "string" ? JSON.parse(row.projects) : row.projects,
       }
     } catch (error) {
-      handleDatabaseError(error, "Create team member")
+      console.error("Create team member error:", error)
       throw error
     }
   },
@@ -259,7 +234,7 @@ export const teamService = {
         projects: typeof row.projects === "string" ? JSON.parse(row.projects) : row.projects,
       }
     } catch (error) {
-      handleDatabaseError(error, "Update team member")
+      console.error("Update team member error:", error)
       throw error
     }
   },
@@ -268,7 +243,7 @@ export const teamService = {
     try {
       await pool.query("DELETE FROM team_members WHERE id = $1", [id])
     } catch (error) {
-      handleDatabaseError(error, "Delete team member")
+      console.error("Delete team member error:", error)
       throw error
     }
   },
@@ -281,8 +256,8 @@ export const partnerService = {
       const result = await pool.query("SELECT * FROM partners ORDER BY created_at DESC")
       return result.rows
     } catch (error) {
-      handleDatabaseError(error, "Get partners")
-      return []
+      console.error("Get partners error:", error)
+      throw error
     }
   },
 
@@ -294,7 +269,7 @@ export const partnerService = {
       )
       return result.rows[0]
     } catch (error) {
-      handleDatabaseError(error, "Create partner")
+      console.error("Create partner error:", error)
       throw error
     }
   },
@@ -322,7 +297,7 @@ export const partnerService = {
       )
       return result.rows[0]
     } catch (error) {
-      handleDatabaseError(error, "Update partner")
+      console.error("Update partner error:", error)
       throw error
     }
   },
@@ -331,7 +306,7 @@ export const partnerService = {
     try {
       await pool.query("DELETE FROM partners WHERE id = $1", [id])
     } catch (error) {
-      handleDatabaseError(error, "Delete partner")
+      console.error("Delete partner error:", error)
       throw error
     }
   },
@@ -347,8 +322,8 @@ export const blogService = {
         tags: typeof row.tags === "string" ? JSON.parse(row.tags) : row.tags,
       }))
     } catch (error) {
-      handleDatabaseError(error, "Get blog posts")
-      return []
+      console.error("Get blog posts error:", error)
+      throw error
     }
   },
 
@@ -362,24 +337,8 @@ export const blogService = {
         tags: typeof row.tags === "string" ? JSON.parse(row.tags) : row.tags,
       }))
     } catch (error) {
-      handleDatabaseError(error, "Get published blog posts")
-      return []
-    }
-  },
-
-  async getBySlug(slug: string): Promise<BlogPost | null> {
-    try {
-      const result = await pool.query("SELECT * FROM blog_posts WHERE slug = $1 AND status = $2", [slug, "published"])
-      if (result.rows.length === 0) return null
-
-      const row = result.rows[0]
-      return {
-        ...row,
-        tags: typeof row.tags === "string" ? JSON.parse(row.tags) : row.tags,
-      }
-    } catch (error) {
-      handleDatabaseError(error, "Get blog post by slug")
-      return null
+      console.error("Get published blog posts error:", error)
+      throw error
     }
   },
 
@@ -406,7 +365,7 @@ export const blogService = {
         tags: typeof row.tags === "string" ? JSON.parse(row.tags) : row.tags,
       }
     } catch (error) {
-      handleDatabaseError(error, "Create blog post")
+      console.error("Create blog post error:", error)
       throw error
     }
   },
@@ -443,7 +402,7 @@ export const blogService = {
         tags: typeof row.tags === "string" ? JSON.parse(row.tags) : row.tags,
       }
     } catch (error) {
-      handleDatabaseError(error, "Update blog post")
+      console.error("Update blog post error:", error)
       throw error
     }
   },
@@ -452,7 +411,7 @@ export const blogService = {
     try {
       await pool.query("DELETE FROM blog_posts WHERE id = $1", [id])
     } catch (error) {
-      handleDatabaseError(error, "Delete blog post")
+      console.error("Delete blog post error:", error)
       throw error
     }
   },
@@ -471,8 +430,8 @@ export const jobService = {
         skills: typeof row.skills === "string" ? JSON.parse(row.skills) : row.skills,
       }))
     } catch (error) {
-      handleDatabaseError(error, "Get job offers")
-      return []
+      console.error("Get job offers error:", error)
+      throw error
     }
   },
 
@@ -487,8 +446,8 @@ export const jobService = {
         skills: typeof row.skills === "string" ? JSON.parse(row.skills) : row.skills,
       }))
     } catch (error) {
-      handleDatabaseError(error, "Get active job offers")
-      return []
+      console.error("Get active job offers error:", error)
+      throw error
     }
   },
 
@@ -522,7 +481,7 @@ export const jobService = {
         skills: typeof row.skills === "string" ? JSON.parse(row.skills) : row.skills,
       }
     } catch (error) {
-      handleDatabaseError(error, "Create job offer")
+      console.error("Create job offer error:", error)
       throw error
     }
   },
@@ -562,7 +521,7 @@ export const jobService = {
         skills: typeof row.skills === "string" ? JSON.parse(row.skills) : row.skills,
       }
     } catch (error) {
-      handleDatabaseError(error, "Update job offer")
+      console.error("Update job offer error:", error)
       throw error
     }
   },
@@ -571,7 +530,7 @@ export const jobService = {
     try {
       await pool.query("DELETE FROM job_offers WHERE id = $1", [id])
     } catch (error) {
-      handleDatabaseError(error, "Delete job offer")
+      console.error("Delete job offer error:", error)
       throw error
     }
   },
@@ -589,8 +548,8 @@ export const applicationService = {
       `)
       return result.rows
     } catch (error) {
-      handleDatabaseError(error, "Get applications")
-      return []
+      console.error("Get applications error:", error)
+      throw error
     }
   },
 
@@ -613,7 +572,7 @@ export const applicationService = {
       )
       return result.rows[0]
     } catch (error) {
-      handleDatabaseError(error, "Create application")
+      console.error("Create application error:", error)
       throw error
     }
   },
@@ -626,7 +585,7 @@ export const applicationService = {
       )
       return result.rows[0]
     } catch (error) {
-      handleDatabaseError(error, "Update application status")
+      console.error("Update application status error:", error)
       throw error
     }
   },

@@ -6,24 +6,22 @@ export async function POST(request: NextRequest) {
     const { email, password } = await request.json()
 
     if (!email || !password) {
-      return NextResponse.json({ success: false, error: "Email et mot de passe requis" }, { status: 400 })
+      return NextResponse.json({ error: "Email et mot de passe requis" }, { status: 400 })
     }
 
     const result = await authService.login(email, password)
 
     if (!result) {
-      return NextResponse.json({ success: false, error: "Email ou mot de passe incorrect" }, { status: 401 })
+      return NextResponse.json({ error: "Email ou mot de passe incorrect" }, { status: 401 })
     }
 
-    // Create response with token
     const response = NextResponse.json({
-      success: true,
-      token: result.token,
+      message: "Connexion réussie",
       user: result.user,
     })
 
-    // Set HTTP-only cookie for additional security
-    response.cookies.set("admin-token", result.token, {
+    // Set HTTP-only cookie for security
+    response.cookies.set("auth-token", result.token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
@@ -33,6 +31,6 @@ export async function POST(request: NextRequest) {
     return response
   } catch (error) {
     console.error("Login API error:", error)
-    return NextResponse.json({ success: false, error: "Erreur interne du serveur" }, { status: 500 })
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
   }
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -23,32 +24,15 @@ export default function AdminLogin() {
     setIsLoading(true)
     setError("")
 
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      })
-
-      const data = await response.json()
-
-      if (response.ok && data.success) {
-        // Store token in localStorage
-        localStorage.setItem("admin-token", data.token)
-
-        // Redirect to dashboard
-        router.push("/admin/dashboard")
-      } else {
-        setError(data.error || "Email ou mot de passe incorrect")
-      }
-    } catch (error) {
-      console.error("Login error:", error)
-      setError("Erreur de connexion. Veuillez réessayer.")
-    } finally {
-      setIsLoading(false)
+    // Simulate authentication (replace with real auth)
+    if (email === "admin@junior-miage-concept.fr" && password === "admin123") {
+      localStorage.setItem("admin-token", "authenticated")
+      router.push("/admin/dashboard")
+    } else {
+      setError("Email ou mot de passe incorrect")
     }
+
+    setIsLoading(false)
   }
 
   return (
@@ -117,8 +101,8 @@ export default function AdminLogin() {
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-            <p className="font-medium">Identifiants de test :</p>
+          <div className="mt-6 text-center text-sm text-gray-600">
+            <p>Identifiants de test :</p>
             <p>Email: admin@junior-miage-concept.fr</p>
             <p>Mot de passe: admin123</p>
           </div>
